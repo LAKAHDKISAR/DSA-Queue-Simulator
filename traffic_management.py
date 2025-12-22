@@ -45,14 +45,16 @@ def select_lane(priority_active, last_active_lane=None):
     )
 
 
+VEHICLES_RELEASE_LIMIT = 15
 #Vechicles to move (used normal lanes only meaning no left turing free lanes)
 def vehicles_to_move(lane):
-    return len(lane_queues[lane])
+    return min(len(lane_queues[lane]), VEHICLES_RELEASE_LIMIT)
 
 
 def green_light_duration(lane):
-    duration =  vehicles_to_move(lane) * TIME_PER_VEHICLE
-    print(f"Green light duration: {duration} seconds")
+    count = vehicles_to_move(lane)
+    duration =  count * TIME_PER_VEHICLE
+    print(f"Green light duration: {duration} seconds for {lane}.")
     return duration
 
 
