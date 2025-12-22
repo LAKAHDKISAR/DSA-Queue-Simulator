@@ -62,9 +62,15 @@ def release_vehicles(lane, count):
             lane_queues[lane].popleft()
 
     # For free lane (left trun lanes that dont need to be controlled)
-    for left_lane in [l for l in LANES if l.endswith("3")]:
-        if lane_queues[left_lane]:
+
+
+    left_trun_lanes = [l for l in LANES if l.endswith("3")]
+    for left_lane in left_trun_lanes:
+        # Such as how it is in real world now bound by time constraint. Only vehicles that can pass in certain time released.
+        vehicles_to_move = min(count, len(lane_queues[left_lane]))
+        for i in range(vehicles_to_move):
             lane_queues[left_lane].popleft()
+
 
 # Updating the traffic lights and green only for one active lane and also the left trun lanes
 def update_lights(active_lane):
