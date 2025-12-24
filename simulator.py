@@ -35,11 +35,9 @@ for step in range(SIMULATION_STEPS):
     if active_lane:
 
         vehicles_to_release = vehicles_to_move(active_lane)
-
-        # Green light duration
+        
         green_duration = green_light_duration(active_lane)
-
-        # Release all vehicles in one go
+        
         release_vehicles(active_lane, vehicles_to_release)
 
         # Update lights
