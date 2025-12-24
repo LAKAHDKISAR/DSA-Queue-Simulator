@@ -1,11 +1,15 @@
 from collections import deque
+import random
 
 LANES = ["AL2", "BL2", "CL2", "DL2", "AL1", "BL1", "CL1", "DL1", "AL3", "BL3", "CL3", "DL3"]
 
 PRIORITY_LANE = "AL2"
 PRIORITY_START_COUNT = 10
 PRIORITY_END_COUNT = 5
-TIME_PER_VEHICLE = 1  # unit time per vehicle 
+
+
+def time_for_vehicles():
+    return random.choice([0.5, 1.0, 1.2, 1.5])  # seconds per vehicle
 
 # Queues
 lane_queues = {
@@ -54,8 +58,9 @@ def vehicles_to_move(lane):
 
 
 def green_light_duration(lane):
-    
+
     count = vehicles_to_move(lane)
+    TIME_PER_VEHICLE = time_for_vehicles()
     duration =  count * TIME_PER_VEHICLE
 
     if duration < MIN_GREEN_TIME:
