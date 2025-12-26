@@ -45,7 +45,7 @@ LANE_SCREEN_POSITION = {
 
 Vehicle_Size = 15
 Vehicle_Spacing = 20
-Vehicle_Speed = 2
+Vehicle_Speed = 120 
 Vehicle_Color = black = (0, 0, 0)
 
 # empty lane initially , for moving vehicles
@@ -67,9 +67,13 @@ TRAFFIC_LIGHT_POSITION = {
     "CL2": (CENTER_X + ROAD_WIDTH // 2 + 30, CENTER_Y - LANE_WIDTH),
     "DL2": (CENTER_X - ROAD_WIDTH // 2 - 30, CENTER_Y + LANE_WIDTH),
 }
+
 all_lanes = set(LANES_CONTROLLED) | set(LEFT_TURNING_LANES)
-last_release_time = {lane: 0 for lane in all_lanes}
-Release_interval = 200
+current_time = pygame.time.get_ticks() / 1000
+last_release_time = {lane: current_time for lane in all_lanes}
+
+Time_per_vehicle = 1.0
+Release_interval = Time_per_vehicle
 
 def dashed_lane_line_vertical(x, start_y, end_y):
     y = start_y
@@ -136,7 +140,7 @@ def vehicle_design():
 
 def add_new_vehicles(active_lane):
     lanes_to_release = LEFT_TURNING_LANES + ([active_lane] if active_lane else [])
-    current_time = pygame.time.get_ticks()
+    current_time = pygame.time.get_ticks() / 1000
 
     for lane in lanes_to_release:
         queue = lane_queues[lane]
@@ -159,7 +163,7 @@ def add_new_vehicles(active_lane):
             })
             last_release_time[lane] = current_time
 
-def move_vehicles():
+def move_vehicles(dt):
     for lane, vehicles in moving_vehicles.items():
         lane_info = LANE_SCREEN_POSITION[lane]
         direction = lane_info["direction"]
@@ -170,34 +174,34 @@ def move_vehicles():
         for v in vehicles:
             light = traffic_lights.get(lane, "RED")
             if lane in LANES_CONTROLLED and light == "RED":
-                if direction == "down" and v["y"] + Vehicle_Speed >= stop:
+                if direction == "down" and v["y"] + Vehicle_Speed * dt >= stop:
                     v["y"] = stop
                     new_list.append(v)
                     continue
 
-                if direction == "up" and v["y"] - Vehicle_Speed <= stop:
+                if direction == "up" and v["y"] - Vehicle_Speed * dt <= stop:
                     v["y"] = stop
                     new_list.append(v)
                     continue
 
-                if direction == "right" and v["x"] + Vehicle_Speed >= stop:
+                if direction == "right" and v["x"] + Vehicle_Speed * dt >= stop:
                     v["x"] = stop
                     new_list.append(v)
                     continue
 
-                if direction == "left" and v["x"] - Vehicle_Speed <= stop:
+                if direction == "left" and v["x"] - Vehicle_Speed * dt <= stop:
                     v["x"] = stop
                     new_list.append(v)
                     continue
 
             if direction == "down":
-                v["y"] += Vehicle_Speed
+                v["y"] += Vehicle_Speed * dt
             elif direction == "up":
-                v["y"] -= Vehicle_Speed
+                v["y"] -= Vehicle_Speed * dt
             elif direction == "right":
-                v["x"] += Vehicle_Speed
+                v["x"] += Vehicle_Speed * dt
             elif direction == "left":
-                v["x"] -= Vehicle_Speed
+                v["x"] -= Vehicle_Speed * dt
 
             if 0 <= v["x"] <= WIDTH and 0 <= v["y"] <= HEIGHT:
                 new_list.append(v)
@@ -215,15 +219,15 @@ def traffic_lights_design():
 
 def main():
     running = True
-    last_gen_time = 0
-    GEN_INTERVAL = 1000
+    last_gen_time = pygame.time.get_ticks() / 1000
+    GEN_INTERVAL = 1.0
     last_active_lane = None
     active_lane = None
-    light_start_time = pygame.time.get_ticks()
+    light_start_time = pygame.time.get_ticks() / 1000
     green_duration = 0
 
     while running:
-        current_time = pygame.time.get_ticks()
+        current_time = pygame.time.get_ticks() / 1000
         if current_time - last_gen_time > GEN_INTERVAL:
             Generate_vehicle()
             last_gen_time = current_time
@@ -237,7 +241,7 @@ def main():
 
         if active_lane != last_active_lane:
             update_lights(active_lane)
-            green_duration = green_light_duration(active_lane) * 1000 
+            green_duration = green_light_duration(active_lane)
             light_start_time = current_time
             last_active_lane = active_lane
 
@@ -247,7 +251,7 @@ def main():
         if current_time - light_start_time >= green_duration:
             active_lane = select_lane(False, last_active_lane)
             update_lights(active_lane)
-            green_duration = green_light_duration(active_lane) * 1000
+            green_duration = green_light_duration(active_lane)
             light_start_time = current_time
             last_active_lane = active_lane
 
@@ -255,13 +259,13 @@ def main():
             if event.type == pygame.QUIT:
                 running = False
 
-        move_vehicles()
+        dt = clock.tick(60) / 1000
+        move_vehicles(dt)
         roads_design()
         vehicle_design()
         traffic_lights_design()
         pygame.display.flip()
-        clock.tick(60)
-
+        
     pygame.quit()
     sys.exit()
 
