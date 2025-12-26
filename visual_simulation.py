@@ -28,6 +28,16 @@ LANE_WIDTH = ROAD_WIDTH // 3
 DASH_LEN = 18
 GAP_LEN = 12
 
+CENTER_ZONE = {
+    "x_min": CENTER_X - ROAD_WIDTH//2,
+    "x_max": CENTER_X + ROAD_WIDTH//2,
+    "y_min": CENTER_Y - ROAD_WIDTH//2,
+    "y_max": CENTER_Y + ROAD_WIDTH//2
+}
+
+def in_center(v):
+    return (CENTER_ZONE["x_min"] <= v["x"] <= CENTER_ZONE["x_max"] and CENTER_ZONE["y_min"] <= v["y"] <= CENTER_ZONE["y_max"])
+
 # ---Mapping lane position ----------------------
 LANE_SCREEN_POSITION = {
     "AL1": {"x": CENTER_X - LANE_WIDTH, "y_start": 0, "direction": "down"},
@@ -154,54 +164,66 @@ def add_new_vehicles(active_lane):
             x = lane_info["x"] - Vehicle_Size // 2 if lane_info["direction"] in ["down", "up"] else lane_info["x_start"]
             y = lane_info["y_start"] if lane_info["direction"] in ["down", "up"] else lane_info["y"] - Vehicle_Size // 2
 
-            moving_vehicles[lane].append({"id": vehicle["id"], "intent": vehicle["intent"], "x": x, "y": y})
+            moving_vehicles[lane].append({"id": vehicle["id"], "intent": vehicle["intent"], "x": x, "y": y, "turned": False, "direction": LANE_SCREEN_POSITION[lane]["direction"] })
             last_release_time[lane] = current_time
 
 def move_vehicles(dt):
     for lane, vehicles in moving_vehicles.items():
-        lane_info = LANE_SCREEN_POSITION[lane]
-        direction = lane_info["direction"]
-        stop = Stop_line[direction]
+        stop = Stop_line[LANE_SCREEN_POSITION[lane]["direction"]] 
 
         new_list = []
 
         for i, v in enumerate(vehicles):
             light = traffic_lights.get(lane, "RED")
             if lane in LANES_CONTROLLED and light == "RED":
-                if direction == "down" and v["y"] + Vehicle_Speed * dt >= stop:
+                d = v["direction"]
+                if d == "down" and v["y"] + Vehicle_Speed * dt >= stop:
                     v["y"] = stop
                     new_list.append(v)
                     continue
-                if direction == "up" and v["y"] - Vehicle_Speed * dt <= stop:
+                if d == "up" and v["y"] - Vehicle_Speed * dt <= stop:
                     v["y"] = stop
                     new_list.append(v)
                     continue
-                if direction == "right" and v["x"] + Vehicle_Speed * dt >= stop:
+                if d == "right" and v["x"] + Vehicle_Speed * dt >= stop:
                     v["x"] = stop
                     new_list.append(v)
                     continue
-                if direction == "left" and v["x"] - Vehicle_Speed * dt <= stop:
+                if d == "left" and v["x"] - Vehicle_Speed * dt <= stop:
                     v["x"] = stop
                     new_list.append(v)
                     continue
 
-            if direction == "down":
+            if v["intent"] == "left" and not v.get("turned") and in_center(v):
+                if v["direction"] == "up":
+                    v["direction"] = "left"
+                elif v["direction"] == "down":
+                    v["direction"] = "right"
+                elif v["direction"] == "left":
+                    v["direction"] = "down"
+                elif v["direction"] == "right":
+                    v["direction"] = "up"
+                v["turned"] = True
+
+            d = v["direction"]
+            if d == "down":
                 v["y"] += Vehicle_Speed * dt
-            elif direction == "up":
+            elif d == "up":
                 v["y"] -= Vehicle_Speed * dt
-            elif direction == "right":
+            elif d == "right":
                 v["x"] += Vehicle_Speed * dt
-            elif direction == "left":
+            elif d == "left":
                 v["x"] -= Vehicle_Speed * dt
 
-            if i > 0:  
+            if i > 0:
                 v_ahead = vehicles[i-1]
-                if direction in ["down", "up"]:
+                d_ahead = v_ahead["direction"]
+                if d in ["down", "up"]:
                     if abs(v["y"] - v_ahead["y"]) < Vehicle_Size + Vehicle_Spacing:
-                        v["y"] = v_ahead["y"] - (Vehicle_Size + Vehicle_Spacing) if direction=="down" else v_ahead["y"] + (Vehicle_Size + Vehicle_Spacing)
-                else: 
+                        v["y"] = v_ahead["y"] - (Vehicle_Size + Vehicle_Spacing) if d=="down" else v_ahead["y"] + (Vehicle_Size + Vehicle_Spacing)
+                else:
                     if abs(v["x"] - v_ahead["x"]) < Vehicle_Size + Vehicle_Spacing:
-                        v["x"] = v_ahead["x"] - (Vehicle_Size + Vehicle_Spacing) if direction=="right" else v_ahead["x"] + (Vehicle_Size + Vehicle_Spacing)
+                        v["x"] = v_ahead["x"] - (Vehicle_Size + Vehicle_Spacing) if d=="right" else v_ahead["x"] + (Vehicle_Size + Vehicle_Spacing)
 
             if 0 <= v["x"] <= WIDTH and 0 <= v["y"] <= HEIGHT:
                 new_list.append(v)
