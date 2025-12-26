@@ -44,7 +44,11 @@ LANE_SCREEN_POS = {
 
 Vehicle_Size = 15
 Vehicle_Spacing = 20
+Vehicle_Speed = 2
+Vehicle_Color = black = (0, 0, 0)
 
+# empty lane initially , for moving vehicles
+moving_vehicles = {lane: [] for lane in lane_queues}
 
 def dashed_lane_line_vertical(x, start_y, end_y):
     y = start_y
@@ -112,25 +116,47 @@ def roads_design():
 
 
 def vehicle_design():
+    for lane, vehicles in moving_vehicles.items():
+        for v in vehicles:
+            pygame.draw.rect(screen, Vehicle_Color, (v["x"], v["y"], Vehicle_Size, Vehicle_Size))
+
+def add_new_vehicles():
+    # new vehicles from lane queue to moving_vehicle function
     for lane, queue in lane_queues.items():
         lane_info = LANE_SCREEN_POS[lane]
-        for i, vehicle in enumerate(queue):
+        while queue:
+            vehicle_id = queue.popleft()  # takeing the vehicle from lane queue
             if lane_info["direction"] == "down":
-                x = lane_info["x"] - Vehicle_Size//2
-                y = lane_info["y_start"] + i*Vehicle_Spacing
-                pygame.draw.rect(screen, (255,0,0), (x, y, Vehicle_Size, Vehicle_Size))
+                x = lane_info["x"] - Vehicle_Size // 2
+                y = lane_info["y_start"]
             elif lane_info["direction"] == "up":
-                x = lane_info["x"] - Vehicle_Size//2
-                y = lane_info["y_start"] - (i+1)*Vehicle_Spacing
-                pygame.draw.rect(screen, (255,0,0), (x, y, Vehicle_Size, Vehicle_Size))
+                x = lane_info["x"] - Vehicle_Size // 2
+                y = lane_info["y_start"]
             elif lane_info["direction"] == "right":
-                x = lane_info["x_start"] + i*Vehicle_Spacing
-                y = lane_info["y"] - Vehicle_Size//2
-                pygame.draw.rect(screen, (255,0,0), (x, y, Vehicle_Size, Vehicle_Size))
+                x = lane_info["x_start"]
+                y = lane_info["y"] - Vehicle_Size // 2
             elif lane_info["direction"] == "left":
-                x = lane_info["x_start"] - (i+1)*Vehicle_Spacing
-                y = lane_info["y"] - Vehicle_Size//2
-                pygame.draw.rect(screen, (255,0,0), (x, y, Vehicle_Size, Vehicle_Size))
+                x = lane_info["x_start"]
+                y = lane_info["y"] - Vehicle_Size // 2
+            moving_vehicles[lane].append({"id": vehicle_id, "x": x, "y": y})
+
+def move_vehicles():
+    for lane, vehicles in moving_vehicles.items():
+        lane_info = LANE_SCREEN_POS[lane]
+        new_list = []
+        for v in vehicles:
+            # Movving the vehciles based on the direction
+            if lane_info["direction"] == "down":
+                v["y"] += Vehicle_Speed
+            elif lane_info["direction"] == "up":
+                v["y"] -= Vehicle_Speed
+            elif lane_info["direction"] == "right":
+                v["x"] += Vehicle_Speed
+            elif lane_info["direction"] == "left":
+                v["x"] -= Vehicle_Speed
+            if 0 <= v["x"] <= WIDTH and 0 <= v["y"] <= HEIGHT:
+                new_list.append(v)
+        moving_vehicles[lane] = new_list
 
 def main():
     running = True
@@ -147,6 +173,7 @@ def main():
             if event.type == pygame.QUIT:
                 running = False
 
+        move_vehicles()
         roads_design()
         vehicle_design()
         pygame.display.flip()
