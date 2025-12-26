@@ -52,6 +52,13 @@ moving_vehicles = {lane: [] for lane in lane_queues}
 
 INCOMING_LANES = ["AL1", "BL1", "CL1", "DL1"]
 
+Stop_line = {
+    "down": CENTER_Y - ROAD_WIDTH // 2 - Vehicle_Size,
+    "up": CENTER_Y + ROAD_WIDTH // 2,
+    "left": CENTER_X + ROAD_WIDTH // 2,
+    "right": CENTER_X - ROAD_WIDTH // 2 - Vehicle_Size,
+}
+
 def dashed_lane_line_vertical(x, start_y, end_y):
     y = start_y
     while y < end_y:
@@ -121,7 +128,8 @@ def add_new_vehicles():
         lane_info = LANE_SCREEN_POS[lane]
 
         while queue:
-            vehicle_id = queue.popleft()
+            vehicle = queue.popleft()  # vehicle is a dict
+
             if lane_info["direction"] in ["down", "up"]:
                 x = lane_info["x"] - Vehicle_Size // 2
                 y = lane_info["y_start"]
@@ -129,24 +137,55 @@ def add_new_vehicles():
                 x = lane_info["x_start"]
                 y = lane_info["y"] - Vehicle_Size // 2
 
-            moving_vehicles[lane].append({"id": vehicle_id, "x": x, "y": y})
+            moving_vehicles[lane].append({
+                "id": vehicle["id"],
+                "intent": vehicle["intent"],
+                "x": x,
+                "y": y
+            })
 
 def move_vehicles():
     for lane, vehicles in moving_vehicles.items():
         lane_info = LANE_SCREEN_POS[lane]
+        direction = lane_info["direction"]
+        stop = Stop_line[direction]
+
         new_list = []
+
         for v in vehicles:
-            # Movving the vehciles based on the direction
-            if lane_info["direction"] == "down":
+            if lane in LANES_CONTROLLED:
+                if direction == "down" and v["y"] + Vehicle_Speed >= stop:
+                    v["y"] = stop
+                    new_list.append(v)
+                    continue
+
+                if direction == "up" and v["y"] - Vehicle_Speed <= stop:
+                    v["y"] = stop
+                    new_list.append(v)
+                    continue
+
+                if direction == "right" and v["x"] + Vehicle_Speed >= stop:
+                    v["x"] = stop
+                    new_list.append(v)
+                    continue
+
+                if direction == "left" and v["x"] - Vehicle_Speed <= stop:
+                    v["x"] = stop
+                    new_list.append(v)
+                    continue
+
+            if direction == "down":
                 v["y"] += Vehicle_Speed
-            elif lane_info["direction"] == "up":
+            elif direction == "up":
                 v["y"] -= Vehicle_Speed
-            elif lane_info["direction"] == "right":
+            elif direction == "right":
                 v["x"] += Vehicle_Speed
-            elif lane_info["direction"] == "left":
+            elif direction == "left":
                 v["x"] -= Vehicle_Speed
+
             if 0 <= v["x"] <= WIDTH and 0 <= v["y"] <= HEIGHT:
                 new_list.append(v)
+
         moving_vehicles[lane] = new_list
 
 def main():
