@@ -104,13 +104,6 @@ def roads_design():
     dashed_lane_line_horizontal(road_d_rect.left, road_d_rect.right, road_d_rect.top + LANE_WIDTH)
     pygame.draw.line(screen, Lane_Color, (road_d_rect.left, road_d_rect.top + 2 * LANE_WIDTH), (road_d_rect.right, road_d_rect.top + 2 * LANE_WIDTH), 2)
 
-
-    # ------ Center dashed line --
-    dashed_lane_line_vertical(CENTER_X, 0, CENTER_Y - ROAD_WIDTH // 2)
-    dashed_lane_line_vertical(CENTER_X, CENTER_Y + ROAD_WIDTH // 2, HEIGHT)
-    dashed_lane_line_horizontal(0, CENTER_X - ROAD_WIDTH // 2, CENTER_Y)
-    dashed_lane_line_horizontal(CENTER_X + ROAD_WIDTH // 2, WIDTH, CENTER_Y)
-
     # - Centre box -
     pygame.draw.rect(screen, Intersection_Color, intersection_rect)
 
