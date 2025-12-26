@@ -247,7 +247,7 @@ def main():
             if next_lane != active_lane:
                 active_lane = next_lane
                 update_lights(active_lane)
-                green_duration = green_light_duration(active_lane)
+                green_duration = green_light_duration(active_lane, moving_vehicles, Release_interval)
                 light_start_time = current_time
                 last_active_lane = active_lane
 

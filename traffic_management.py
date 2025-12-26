@@ -76,18 +76,23 @@ def vehicles_to_move(lane):
     return min(vehicles_per_lane, VEHICLES_RELEASE_LIMIT)
 
 
-def green_light_duration(lane):
+def green_light_duration(lane, moving_vehicles, Time_per_vehicle):
+    moving_count = len(moving_vehicles[lane])  
+    queued_count = len(lane_queues[lane])
+    total_vehicles = moving_count + queued_count
 
-    count = vehicles_to_move(lane)
-    TIME_PER_VEHICLE = time_for_vehicles()
-    duration =  count * TIME_PER_VEHICLE
+    total_vehicles = min(total_vehicles, VEHICLES_RELEASE_LIMIT) #release limit
 
+    # Total duration needed
+    duration = total_vehicles * Time_per_vehicle
+
+    # Clamp duration
     if duration < MIN_GREEN_TIME:
         duration = MIN_GREEN_TIME
     elif duration > MAX_GREEN_TIME:
         duration = MAX_GREEN_TIME
 
-    print(f"Green light duration: {duration} seconds for {lane}. Vehicles released: {count}")
+    print(f"Green light duration: {duration}s for {lane} ({total_vehicles} vehicles)")
     return duration
 
 vehicles_exited = 0
