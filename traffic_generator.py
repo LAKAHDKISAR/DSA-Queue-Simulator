@@ -7,14 +7,15 @@ def Generate_vehicle():
     global vehicle_id
 
     for lane in LANES_CONTROLLED:
-
-        num_vehicles = random.randint(0, 6) 
+        num_vehicles = random.randint(0, 3) 
         for i in range(num_vehicles):
-            vehicle_id += 1
-            lane_queues[lane].append(vehicle_id)
+            if random.random() < 0.5:
+                vehicle_id += 1
+                lane_queues[lane].append(vehicle_id)
 
     for lane in LEFT_TURNING_LANES:
-        num_vehicles = random.randint(0, 5) 
+        num_vehicles = random.randint(0, 2) 
         for i in range(num_vehicles):
-            vehicle_id += 1
-            lane_queues[lane].append(vehicle_id)
+            if random.random() < 0.5:
+                vehicle_id += 1
+                lane_queues[lane].append(vehicle_id)

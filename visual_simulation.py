@@ -42,6 +42,9 @@ LANE_SCREEN_POS = {
     "DL3": {"y": CENTER_Y + LANE_WIDTH, "x_start": 0, "direction": "right"},
 }
 
+Vehicle_Size = 15
+Vehicle_Spacing = 20
+
 
 def dashed_lane_line_vertical(x, start_y, end_y):
     y = start_y
@@ -108,6 +111,27 @@ def roads_design():
     pygame.draw.rect(screen, Intersection_Color, intersection_rect)
 
 
+def vehicle_design():
+    for lane, queue in lane_queues.items():
+        lane_info = LANE_SCREEN_POS[lane]
+        for i, vehicle in enumerate(queue):
+            if lane_info["direction"] == "down":
+                x = lane_info["x"] - Vehicle_Size//2
+                y = lane_info["y_start"] + i*Vehicle_Spacing
+                pygame.draw.rect(screen, (255,0,0), (x, y, Vehicle_Size, Vehicle_Size))
+            elif lane_info["direction"] == "up":
+                x = lane_info["x"] - Vehicle_Size//2
+                y = lane_info["y_start"] - (i+1)*Vehicle_Spacing
+                pygame.draw.rect(screen, (255,0,0), (x, y, Vehicle_Size, Vehicle_Size))
+            elif lane_info["direction"] == "right":
+                x = lane_info["x_start"] + i*Vehicle_Spacing
+                y = lane_info["y"] - Vehicle_Size//2
+                pygame.draw.rect(screen, (255,0,0), (x, y, Vehicle_Size, Vehicle_Size))
+            elif lane_info["direction"] == "left":
+                x = lane_info["x_start"] - (i+1)*Vehicle_Spacing
+                y = lane_info["y"] - Vehicle_Size//2
+                pygame.draw.rect(screen, (255,0,0), (x, y, Vehicle_Size, Vehicle_Size))
+
 def main():
     running = True
     last_gen_time = 0
@@ -124,6 +148,7 @@ def main():
                 running = False
 
         roads_design()
+        vehicle_design()
         pygame.display.flip()
         clock.tick(60)
 
