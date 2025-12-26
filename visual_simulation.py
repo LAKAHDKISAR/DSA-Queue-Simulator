@@ -166,6 +166,7 @@ def main():
     while running:
         current_time = pygame.time.get_ticks()
         if current_time - last_gen_time > GEN_INTERVAL:
+            add_new_vehicles()
             Generate_vehicle()
             last_gen_time = current_time
 
