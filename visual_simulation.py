@@ -145,22 +145,12 @@ def add_new_vehicles(active_lane):
     for lane in lanes_to_release:
         queue = lane_queues[lane]
         lane_info = LANE_SCREEN_POSITION[lane]
-        count = vehicles_to_move(lane)
         if queue and current_time - last_release_time[lane] >= Release_interval:
             vehicle = queue.popleft()
-            if lane_info["direction"] in ["down", "up"]:
-                x = lane_info["x"] - Vehicle_Size // 2
-                y = lane_info["y_start"]
-            else:
-                x = lane_info["x_start"]
-                y = lane_info["y"] - Vehicle_Size // 2
+            x = lane_info["x"] - Vehicle_Size // 2 if lane_info["direction"] in ["down", "up"] else lane_info["x_start"]
+            y = lane_info["y_start"] if lane_info["direction"] in ["down", "up"] else lane_info["y"] - Vehicle_Size // 2
 
-            moving_vehicles[lane].append({
-                "id": vehicle["id"],
-                "intent": vehicle["intent"],
-                "x": x,
-                "y": y
-            })
+            moving_vehicles[lane].append({"id": vehicle["id"], "intent": vehicle["intent"], "x": x, "y": y})
             last_release_time[lane] = current_time
 
 def move_vehicles(dt):
@@ -171,28 +161,34 @@ def move_vehicles(dt):
 
         new_list = []
 
-        for v in vehicles:
+        for i, v in enumerate(vehicles):
             light = traffic_lights.get(lane, "RED")
             if lane in LANES_CONTROLLED and light == "RED":
                 if direction == "down" and v["y"] + Vehicle_Speed * dt >= stop:
                     v["y"] = stop
                     new_list.append(v)
                     continue
-
                 if direction == "up" and v["y"] - Vehicle_Speed * dt <= stop:
                     v["y"] = stop
                     new_list.append(v)
                     continue
-
                 if direction == "right" and v["x"] + Vehicle_Speed * dt >= stop:
                     v["x"] = stop
                     new_list.append(v)
                     continue
-
                 if direction == "left" and v["x"] - Vehicle_Speed * dt <= stop:
                     v["x"] = stop
                     new_list.append(v)
                     continue
+
+            if i > 0:  
+                v_ahead = vehicles[i-1]
+                if direction in ["down", "up"]:
+                    if abs(v["y"] - v_ahead["y"]) < Vehicle_Size + Vehicle_Spacing:
+                        v["y"] = v_ahead["y"] - (Vehicle_Size + Vehicle_Spacing) if direction=="down" else v_ahead["y"] + (Vehicle_Size + Vehicle_Spacing)
+                else: 
+                    if abs(v["x"] - v_ahead["x"]) < Vehicle_Size + Vehicle_Spacing:
+                        v["x"] = v_ahead["x"] - (Vehicle_Size + Vehicle_Spacing) if direction=="right" else v_ahead["x"] + (Vehicle_Size + Vehicle_Spacing)
 
             if direction == "down":
                 v["y"] += Vehicle_Speed * dt
