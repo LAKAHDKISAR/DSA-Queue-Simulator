@@ -1,5 +1,6 @@
 import pygame
 import sys
+import random
 
 from traffic_management import LANES_CONTROLLED, LEFT_TURNING_LANES, lane_queues, INCOMING_LANES, priority_lane_active, priority_should_end, select_lane, update_lights, traffic_lights, green_light_duration, vehicles_to_move, release_vehicles
 
@@ -20,7 +21,6 @@ Background_Color = Army_green = (69, 75, 27)
 Road_Color = Dark_grey =(169, 169, 169)
 Intersection_Color = grey =(128, 128, 128)
 Lane_Color = White = (255, 255, 255)
-
 
 CENTER_X, CENTER_Y = WIDTH // 2, HEIGHT // 2
 ROAD_WIDTH = 200
@@ -57,7 +57,6 @@ LANE_SCREEN_POSITION = {
     "DL3": {"y": CENTER_Y - LANE_WIDTH, "x_start": 0, "direction": "right"}
 }
 
-Vehicle_Size = 15
 Vehicle_Spacing = 20
 Vehicle_Speed = 120 
 Vehicle_Color = black = (0, 0, 0)
@@ -66,13 +65,6 @@ Vehicle_Color = black = (0, 0, 0)
 moving_vehicles = {lane: [] for lane in lane_queues}
 
 INCOMING_LANES = ["AL1", "BL1", "CL1", "DL1"]
-
-Stop_line = {
-    "down": CENTER_Y - ROAD_WIDTH // 2 - Vehicle_Size,
-    "up": CENTER_Y + ROAD_WIDTH // 2,
-    "left": CENTER_X + ROAD_WIDTH // 2,
-    "right": CENTER_X - ROAD_WIDTH // 2 - Vehicle_Size,
-}
 
 Light_Radius = 8
 
@@ -105,6 +97,36 @@ Shift_speed = 40
 
 pygame.font.init()
 FONT = pygame.font.SysFont('Arial', 20)
+
+TARGET_HEIGHT = 60
+
+CAR_IMAGES = [
+    pygame.image.load("asset/Ambulance.png").convert_alpha(),
+    pygame.image.load("asset/Audi.png").convert_alpha(),
+    pygame.image.load("asset/Black_viper.png").convert_alpha(),
+    pygame.image.load("asset/Car.png").convert_alpha(),
+    pygame.image.load("asset/Mini_truck.png").convert_alpha(),
+    pygame.image.load("asset/Mini_van.png").convert_alpha(),
+    pygame.image.load("asset/Police.png").convert_alpha(),
+    pygame.image.load("asset/taxi.png").convert_alpha(),
+    pygame.image.load("asset/truck.png").convert_alpha()
+]
+
+CAR_IMAGES = [
+    pygame.transform.smoothscale(img, (int(img.get_width() * TARGET_HEIGHT / img.get_height()), TARGET_HEIGHT))
+    for img in CAR_IMAGES
+]
+
+Vehicle_Width, Vehicle_Height = CAR_IMAGES[0].get_size()
+Vehicle_Spacing = Vehicle_Height // 3
+
+Stop_line = {
+    "down": CENTER_Y - ROAD_WIDTH // 2 - Vehicle_Height,
+    "up": CENTER_Y + ROAD_WIDTH // 2 + Vehicle_Height,
+    "left": CENTER_X + ROAD_WIDTH // 2 + Vehicle_Height,
+    "right": CENTER_X - ROAD_WIDTH // 2 - Vehicle_Height,
+}
+
 
 def lane_names():
     for lane, info in LANE_SCREEN_POSITION.items():
@@ -181,9 +203,19 @@ def roads_design():
 
 
 def vehicle_design():
-    for lane, vehicles in moving_vehicles.items():
+    for vehicles in moving_vehicles.values():
         for v in vehicles:
-            pygame.draw.rect(screen, Vehicle_Color, (v["x"], v["y"], Vehicle_Size, Vehicle_Size))
+            img = v["sprite"]
+
+            if v["direction"] == "down":
+                img = pygame.transform.rotate(img, 180)
+            elif v["direction"] == "right":
+                img = pygame.transform.rotate(img, -90)
+            elif v["direction"] == "left":
+                img = pygame.transform.rotate(img, 90)
+
+            rect = img.get_rect(center=(v["x"], v["y"]))
+            screen.blit(img, rect)
 
 def add_new_vehicles(active_lane):
     lanes_to_release = LEFT_TURNING_LANES + ([active_lane] if active_lane else [])
@@ -194,19 +226,24 @@ def add_new_vehicles(active_lane):
         lane_info = LANE_SCREEN_POSITION[lane]
         if queue and current_time - last_release_time[lane] >= Release_interval:
             vehicle = queue.popleft()
-            x = lane_info["x"] - Vehicle_Size // 2 if lane_info["direction"] in ["down", "up"] else lane_info["x_start"]
-            y = lane_info["y_start"] if lane_info["direction"] in ["down", "up"] else lane_info["y"] - Vehicle_Size // 2
+            if lane_info["direction"] in ["down", "up"]:
+                x = lane_info["x"]  
+                y = lane_info["y_start"] - Vehicle_Height // 2
+            else:
+                x = lane_info["x_start"] + Vehicle_Width // 2 
+                y = lane_info["y"]  
+
 
             if moving_vehicles[lane]:
                 last = moving_vehicles[lane][-1]
                 d = lane_info["direction"]
 
-                if d in ["down", "up"] and abs(last["y"] - y) < Vehicle_Size + Vehicle_Spacing:
+                if d in ["down", "up"] and abs(last["y"] - y) < Vehicle_Height + Vehicle_Spacing:
                     continue
-                if d in ["left", "right"] and abs(last["x"] - x) < Vehicle_Size + Vehicle_Spacing:
+                if d in ["left", "right"] and abs(last["x"] - x) < Vehicle_Width + Vehicle_Spacing:
                     continue
 
-            moving_vehicles[lane].append({"id": vehicle["id"], "intent": vehicle["intent"], "x": x, "y": y, "turned": False, "direction": LANE_SCREEN_POSITION[lane]["direction"], "passed_stop": False, "shifted": False})
+            moving_vehicles[lane].append({"id": vehicle["id"], "intent": vehicle["intent"], "x": x, "y": y, "turned": False, "direction": LANE_SCREEN_POSITION[lane]["direction"], "passed_stop": False, "shifted": False, "sprite": random.choice(CAR_IMAGES)})
             last_release_time[lane] = current_time
 
 def move_vehicles(dt):
@@ -248,6 +285,7 @@ def move_vehicles(dt):
                     v["direction"] = "up"
                 v["turned"] = True
 
+
             if i > 0:
                 v_ahead = vehicles[i-1]
 
@@ -255,19 +293,20 @@ def move_vehicles(dt):
                     d = v["direction"]
 
                     if d in ["down", "up"]:
-                        if abs(v["y"] - v_ahead["y"]) < Vehicle_Size + Vehicle_Spacing:
+                        if abs(v["y"] - v_ahead["y"]) < Vehicle_Height + Vehicle_Spacing:
                             v["y"] = (
-                                v_ahead["y"] - (Vehicle_Size + Vehicle_Spacing)
+                                v_ahead["y"] - (Vehicle_Height + Vehicle_Spacing)
                                 if d == "down"
-                                else v_ahead["y"] + (Vehicle_Size + Vehicle_Spacing)
+                                else v_ahead["y"] + (Vehicle_Height + Vehicle_Spacing)
                             )
                     else:
-                        if abs(v["x"] - v_ahead["x"]) < Vehicle_Size + Vehicle_Spacing:
+                        if abs(v["x"] - v_ahead["x"]) < Vehicle_Width + Vehicle_Spacing:
                             v["x"] = (
-                                v_ahead["x"] - (Vehicle_Size + Vehicle_Spacing)
+                                v_ahead["x"] - (Vehicle_Width + Vehicle_Spacing)
                                 if d == "right"
-                                else v_ahead["x"] + (Vehicle_Size + Vehicle_Spacing)
+                                else v_ahead["x"] + (Vehicle_Width + Vehicle_Spacing)
                             )
+
             if lane in MIDDLE_LANE_SHIFT and not v.get("shifted"):
                 shift_amount = MIDDLE_LANE_SHIFT[lane]
                 
