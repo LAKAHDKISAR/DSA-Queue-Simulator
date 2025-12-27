@@ -8,7 +8,7 @@ from traffic_generator import Generate_vehicle
 
 pygame.init()
 clock = pygame.time.Clock()
-WIDTH, HEIGHT = 1500, 1000
+WIDTH, HEIGHT = 1500, 900
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Traffic Simulation")
 clock = pygame.time.Clock()
@@ -103,6 +103,20 @@ MIDDLE_LANE_SHIFT = {
 Shift_start_offset = 30  #---- for middle lane shifting to enter through incoming
 Shift_speed = 40
 
+pygame.font.init()
+FONT = pygame.font.SysFont('Arial', 20)
+
+def lane_names():
+    for lane, info in LANE_SCREEN_POSITION.items():
+        text_surface = FONT.render(lane, True, (54, 69, 79))
+        if info["direction"] in ["down", "up"]:
+            x = info["x"] - text_surface.get_width() // 2
+            y = 10 if info["direction"] == "down" else HEIGHT - 30
+        else:
+            x = WIDTH - text_surface.get_width() - 10 if info["direction"] == "left" else 10
+            y = info["y"] - text_surface.get_height() // 2
+
+        screen.blit(text_surface, (x, y))
 
 def dashed_lane_line_vertical(x, start_y, end_y):
     y = start_y
@@ -358,26 +372,15 @@ def main():
             Generate_vehicle()
             last_gen_time = current_time
 
-        if priority_lane_active():
-            active_lane = "AL2"
-        elif priority_should_end():
-            active_lane = select_lane(False, last_active_lane)
-        else:
-            active_lane = select_lane(False, last_active_lane)
-
-        if active_lane:
-            add_new_vehicles(active_lane)
-
         if current_time - light_start_time >= green_duration:
-            next_lane = select_lane(False, last_active_lane)
-            if next_lane is None:
-                next_lane = active_lane
-            if next_lane != active_lane:
-                active_lane = next_lane
+            active_lane = select_lane(priority_lane_active())
+            if active_lane:
                 update_lights(active_lane)
                 green_duration = green_light_duration(active_lane, moving_vehicles, Release_interval)
                 light_start_time = current_time
-                last_active_lane = active_lane
+
+        if active_lane:
+            add_new_vehicles(active_lane)
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -386,6 +389,7 @@ def main():
         dt = clock.tick(60) / 1000
         move_vehicles(dt)
         roads_design()
+        lane_names()
         vehicle_design()
         traffic_lights_design()
         pygame.display.flip()

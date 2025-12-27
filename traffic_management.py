@@ -34,32 +34,28 @@ def priority_should_end():
     # True if Priority lane has less than set vehicles (ie 5)
     return len(lane_queues[PRIORITY_LANE]) < PRIORITY_END_COUNT
 
+LANE_ORDER = ["AL2", "CL2", "BL2", "DL2"]
+last_served_index = -1  
 
-last_served=-1
-def select_lane(priority_active, last_active_lane=None):
-    global last_served
-    # Exception for priority
+def select_lane(priority_active):
+    global last_served_index
+
     if priority_active:
         return PRIORITY_LANE
-    
-    #only control needing lanes 
-    control_needing_lanes = LANES_CONTROLLED
 
-    # When all lanes are empt then returining the last active lane
-    if all(len(lane_queues[lane]) == 0 for lane in control_needing_lanes):
-        return last_active_lane
-    
+    non_empty_lanes = [lane for lane in LANE_ORDER if len(lane_queues[lane]) > 0]
+    if not non_empty_lanes:
+        return None
 
-    # Selecting in a circular manner for each lane. (Circular Queue type approach)
-    n = len(control_needing_lanes)
+    # In a round mannner served
+    n = len(LANE_ORDER)
     for i in range(n):
-        last_served = (last_served + 1) % n
-        lane = control_needing_lanes[last_served]
-        if len(lane_queues[lane]) > 0:
+        last_served_index = (last_served_index + 1) % n
+        lane = LANE_ORDER[last_served_index]
+        if lane in non_empty_lanes:
             return lane
 
-    return last_active_lane
-
+    return None
 
 VEHICLES_RELEASE_LIMIT = 15
 MIN_GREEN_TIME = 2
