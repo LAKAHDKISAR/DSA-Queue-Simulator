@@ -143,8 +143,13 @@ OPPOSITE_DIRECTION = {
     "left": "right",
     "right": "left"
 }
+ARROW_BODY = 26     
+ARROW_KINK = 10  
+ARROW_HEAD = 10
+ARROW_WIDTH = 4
 
 Indicator_req_middle_lanes = ["BL2", "CL2", "DL2"]
+Indicator_req_left_turn_lanes = ["AL3", "BL3", "CL3", "DL3"]
 
 def add_log(message):
     global log_messages
@@ -171,49 +176,96 @@ def wrap_text(text, font, max_width):
     return lines
 
 def straight_arrow(x, y, direction, color=(245,245,245)):
-    shaft = 28
-    head = 10
-    w = 4
+    shaft = ARROW_BODY
+    head = ARROW_HEAD
+    w = ARROW_WIDTH
 
     if direction == "down":
-        pygame.draw.line(screen, color, (x, y - shaft), (x, y + shaft), w)
+        pygame.draw.line(screen, color, (x, y - shaft), (x, y), w)
         pygame.draw.polygon(
             screen, color,
-            [(x, y + shaft + head),
-             (x - head, y + shaft),
-             (x + head, y + shaft)]
+            [(x, y + head),
+             (x - head, y),
+             (x + head, y)]
         )
 
     elif direction == "up":
-        pygame.draw.line(screen, color, (x, y + shaft), (x, y - shaft), w)
+        pygame.draw.line(screen, color, (x, y + shaft), (x, y), w)
         pygame.draw.polygon(
             screen, color,
-            [(x, y - shaft - head),
-             (x - head, y - shaft),
-             (x + head, y - shaft)]
+            [(x, y - head),
+             (x - head, y),
+             (x + head, y)]
         )
 
     elif direction == "right":
-        pygame.draw.line(screen, color, (x - shaft, y), (x + shaft, y), w)
+        pygame.draw.line(screen, color, (x - shaft, y), (x, y), w)
         pygame.draw.polygon(
             screen, color,
-            [(x + shaft + head, y),
-             (x + shaft, y - head),
-             (x + shaft, y + head)]
+            [(x + head, y),
+             (x, y - head),
+             (x, y + head)]
         )
 
     elif direction == "left":
-        pygame.draw.line(screen, color, (x + shaft, y), (x - shaft, y), w)
+        pygame.draw.line(screen, color, (x + shaft, y), (x, y), w)
         pygame.draw.polygon(
             screen, color,
-            [(x - shaft - head, y),
-             (x - shaft, y - head),
-             (x - shaft, y + head)]
+            [(x - head, y),
+             (x, y - head),
+             (x, y + head)]
+        )
+
+
+def left_turn_arrow(x, y, direction, color=(245,245,245)):
+    shaft = ARROW_BODY
+    kink = ARROW_KINK
+    head = ARROW_HEAD
+    w = ARROW_WIDTH
+
+    if direction == "down":
+        pygame.draw.line(screen, color, (x, y - shaft), (x, y), w)
+        pygame.draw.line(screen, color, (x, y), (x + kink, y), w)
+        pygame.draw.polygon(
+            screen, color,
+            [(x + kink + head, y),
+             (x + kink, y - head),
+             (x + kink, y + head)]
+        )
+
+    elif direction == "up":
+        pygame.draw.line(screen, color, (x, y + shaft), (x, y), w)
+        pygame.draw.line(screen, color, (x, y), (x - kink, y), w)
+        pygame.draw.polygon(
+            screen, color,
+            [(x - kink - head, y),
+             (x - kink, y - head),
+             (x - kink, y + head)]
+        )
+
+    elif direction == "right":
+        pygame.draw.line(screen, color, (x - shaft, y), (x, y), w)
+        pygame.draw.line(screen, color, (x, y), (x, y - kink), w)
+        pygame.draw.polygon(
+            screen, color,
+            [(x, y - kink - head),
+             (x - head, y - kink),
+             (x + head, y - kink)]
+        )
+
+    elif direction == "left":
+        pygame.draw.line(screen, color, (x + shaft, y), (x, y), w)
+        pygame.draw.line(screen, color, (x, y), (x, y + kink), w)
+        pygame.draw.polygon(
+            screen, color,
+            [(x, y + kink + head),
+             (x - head, y + kink),
+             (x + head, y + kink)]
         )
 
 
 def incoming_lane_arrows():
-    offset = 45 
+    offset = 60
 
     for lane in INCOMING_LANES:
         info = LANE_SCREEN_POSITION[lane]
@@ -261,6 +313,31 @@ def middle_lane_arrows():
             y = info["y"]
 
         straight_arrow(x, y, d)
+
+def left_turn_lane_arrows():
+    offset = 45
+
+    for lane in Indicator_req_left_turn_lanes:
+        info = LANE_SCREEN_POSITION[lane]
+        d = info["direction"]
+
+        if d == "down":
+            x = info["x"]
+            y = Stop_line["down"] - offset
+
+        elif d == "up":
+            x = info["x"]
+            y = Stop_line["up"] + offset
+
+        elif d == "right":
+            x = Stop_line["right"] - offset
+            y = info["y"]
+
+        elif d == "left":
+            x = Stop_line["left"] + offset
+            y = info["y"]
+
+        left_turn_arrow(x, y, d)
 
 def sidebar():
     sidebar_rect = pygame.Rect(0, 0, SIDEBAR_WIDTH, SIDEBAR_HEIGHT)
@@ -386,6 +463,7 @@ def roads_design():
     priority_triangles_al2()
     incoming_lane_arrows()
     middle_lane_arrows()
+    left_turn_lane_arrows()
 
 def vehicle_design():
     for vehicles in moving_vehicles.values():
