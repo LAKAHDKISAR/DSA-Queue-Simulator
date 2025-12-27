@@ -89,6 +89,8 @@ last_release_time = {lane: current_time for lane in all_lanes}
 Time_per_vehicle = 1.0
 Release_interval = Time_per_vehicle
 
+Turn_offset = 60  #--- for left turning vehicles
+
 def dashed_lane_line_vertical(x, start_y, end_y):
     y = start_y
     while y < end_y:
@@ -164,7 +166,7 @@ def add_new_vehicles(active_lane):
             x = lane_info["x"] - Vehicle_Size // 2 if lane_info["direction"] in ["down", "up"] else lane_info["x_start"]
             y = lane_info["y_start"] if lane_info["direction"] in ["down", "up"] else lane_info["y"] - Vehicle_Size // 2
 
-            moving_vehicles[lane].append({"id": vehicle["id"], "intent": vehicle["intent"], "x": x, "y": y, "turned": False, "direction": LANE_SCREEN_POSITION[lane]["direction"] })
+            moving_vehicles[lane].append({"id": vehicle["id"], "intent": vehicle["intent"], "x": x, "y": y, "turned": False, "direction": LANE_SCREEN_POSITION[lane]["direction"], "passed_stop": False})
             last_release_time[lane] = current_time
 
 def move_vehicles(dt):
@@ -175,8 +177,9 @@ def move_vehicles(dt):
 
         for i, v in enumerate(vehicles):
             light = traffic_lights.get(lane, "RED")
-            if lane in LANES_CONTROLLED and light == "RED":
+            if lane in LANES_CONTROLLED and light == "RED" and not v["passed_stop"]:
                 d = v["direction"]
+                stop = Stop_line[LANE_SCREEN_POSITION[lane]["direction"]]
                 if d == "down" and v["y"] + Vehicle_Speed * dt >= stop:
                     v["y"] = stop
                     new_list.append(v)
@@ -194,7 +197,7 @@ def move_vehicles(dt):
                     new_list.append(v)
                     continue
 
-            if v["intent"] == "left" and not v.get("turned") and in_center(v):
+            if v["intent"] == "left" and not v.get("turned") and ready_to_turn_left(v, lane):
                 if v["direction"] == "up":
                     v["direction"] = "left"
                 elif v["direction"] == "down":
@@ -217,18 +220,43 @@ def move_vehicles(dt):
 
             if i > 0:
                 v_ahead = vehicles[i-1]
-                d_ahead = v_ahead["direction"]
-                if d in ["down", "up"]:
-                    if abs(v["y"] - v_ahead["y"]) < Vehicle_Size + Vehicle_Spacing:
-                        v["y"] = v_ahead["y"] - (Vehicle_Size + Vehicle_Spacing) if d=="down" else v_ahead["y"] + (Vehicle_Size + Vehicle_Spacing)
-                else:
-                    if abs(v["x"] - v_ahead["x"]) < Vehicle_Size + Vehicle_Spacing:
-                        v["x"] = v_ahead["x"] - (Vehicle_Size + Vehicle_Spacing) if d=="right" else v_ahead["x"] + (Vehicle_Size + Vehicle_Spacing)
 
+                if not v.get("turned") and not v_ahead.get("turned"):
+                    d = v["direction"]
+
+                    if d in ["down", "up"]:
+                        if abs(v["y"] - v_ahead["y"]) < Vehicle_Size + Vehicle_Spacing:
+                            v["y"] = (
+                                v_ahead["y"] - (Vehicle_Size + Vehicle_Spacing)
+                                if d == "down"
+                                else v_ahead["y"] + (Vehicle_Size + Vehicle_Spacing)
+                            )
+                    else:
+                        if abs(v["x"] - v_ahead["x"]) < Vehicle_Size + Vehicle_Spacing:
+                            v["x"] = (
+                                v_ahead["x"] - (Vehicle_Size + Vehicle_Spacing)
+                                if d == "right"
+                                else v_ahead["x"] + (Vehicle_Size + Vehicle_Spacing)
+                            )
+
+                
             if 0 <= v["x"] <= WIDTH and 0 <= v["y"] <= HEIGHT:
                 new_list.append(v)
 
         moving_vehicles[lane] = new_list
+
+def ready_to_turn_left(v, lane):
+    d = v["direction"]
+
+    if d == "down":
+        return v["y"] >= CENTER_Y - Turn_offset
+    if d == "up":
+        return v["y"] <= CENTER_Y + Turn_offset
+    if d == "right":
+        return v["x"] >= CENTER_X - Turn_offset
+    if d == "left":
+        return v["x"] <= CENTER_X + Turn_offset
+    return False
 
 def traffic_lights_design():
     for lane, pos in TRAFFIC_LIGHT_POSITION.items():
@@ -266,6 +294,8 @@ def main():
 
         if current_time - light_start_time >= green_duration:
             next_lane = select_lane(False, last_active_lane)
+            if next_lane is None:
+                next_lane = active_lane
             if next_lane != active_lane:
                 active_lane = next_lane
                 update_lights(active_lane)
