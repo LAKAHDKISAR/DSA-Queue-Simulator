@@ -151,6 +151,16 @@ ARROW_WIDTH = 4
 Indicator_req_middle_lanes = ["BL2", "CL2", "DL2"]
 Indicator_req_left_turn_lanes = ["AL3", "BL3", "CL3", "DL3"]
 
+TREE_IMAGES = [
+    pygame.image.load("Asset/RE_01.png").convert_alpha(),
+    pygame.image.load("Asset/RE_02.png").convert_alpha()
+]
+TREE_SIZE = 60 
+TREE_IMAGES = [
+    pygame.transform.smoothscale(img, (TREE_SIZE, TREE_SIZE))
+    for img in TREE_IMAGES
+]
+
 def add_log(message):
     global log_messages
     log_messages.append(message)
@@ -423,6 +433,26 @@ def priority_triangles_al2():
         
         pygame.draw.polygon(screen, triangle_color, points)
 
+TREE_INSTANCES = []
+
+def generate_tree_instances():
+    spacing = 120
+    buffer = 100 
+    TREE_INSTANCES.clear()
+    for y in range(0, HEIGHT, spacing):
+        if y < CENTER_Y - ROAD_WIDTH//2 or y > CENTER_Y + ROAD_WIDTH//2:
+            TREE_INSTANCES.append((CENTER_X - ROAD_WIDTH//2 - TREE_SIZE - 10, y, random.choice(TREE_IMAGES)))
+            TREE_INSTANCES.append((CENTER_X + ROAD_WIDTH//2 + 10, y, random.choice(TREE_IMAGES)))
+    for x in range(0, WIDTH, spacing):
+        if x < CENTER_X - ROAD_WIDTH//2 - buffer or x > CENTER_X + ROAD_WIDTH//2 + buffer:
+            TREE_INSTANCES.append((x, CENTER_Y - ROAD_WIDTH//2 - TREE_SIZE - 10, random.choice(TREE_IMAGES)))
+            TREE_INSTANCES.append((x, CENTER_Y + ROAD_WIDTH//2 + 10, random.choice(TREE_IMAGES)))
+
+generate_tree_instances()
+def trees():
+    for x, y, tree in TREE_INSTANCES:
+        screen.blit(tree, (x, y))
+
 
 def roads_design():
     screen.fill(Background_Color)
@@ -464,6 +494,7 @@ def roads_design():
     incoming_lane_arrows()
     middle_lane_arrows()
     left_turn_lane_arrows()
+    trees()
 
 def vehicle_design():
     for vehicles in moving_vehicles.values():
