@@ -100,7 +100,7 @@ Priority Lane Specification
 
 ## Simulation Demo
 
-<video src="Docs/Simulation_Demo_Compressed.mov" controls width="600"></video>
+[![Demo Video](https://img.shields.io/badge/Watch_Demo-Click_Here-red?style=for-the-badge&logo=play)](Docs/Simulation_Demo.mov)
 
 ## File Structure
 
