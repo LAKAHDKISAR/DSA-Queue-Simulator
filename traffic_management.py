@@ -47,12 +47,13 @@ def select_lane(priority_active):
     if not non_empty_lanes:
         return None
 
-    # In a round mannner served
+    # in a round manner
     n = len(LANE_ORDER)
     for i in range(n):
-        last_served_index = (last_served_index + 1) % n
-        lane = LANE_ORDER[last_served_index]
+        check_index = (last_served_index + 1 + i) % n
+        lane = LANE_ORDER[check_index]
         if lane in non_empty_lanes:
+            last_served_index = check_index
             return lane
 
     return None

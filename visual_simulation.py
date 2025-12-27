@@ -360,7 +360,7 @@ def traffic_lights_design():
 def main():
     running = True
     last_gen_time = pygame.time.get_ticks() / 1000
-    GEN_INTERVAL = 1.0
+    GEN_INTERVAL = 3.0
     last_active_lane = None
     active_lane = None
     light_start_time = pygame.time.get_ticks() / 1000
