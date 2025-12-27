@@ -91,6 +91,13 @@ Release_interval = Time_per_vehicle
 
 Turn_offset = 60  #--- for left turning vehicles
 
+MIDDLE_LANE_SHIFT = {
+    "AL2": +LANE_WIDTH,   
+    "BL2": -LANE_WIDTH,   
+    "DL2": -LANE_WIDTH,   
+    "CL2": +LANE_WIDTH,
+}
+
 def dashed_lane_line_vertical(x, start_y, end_y):
     y = start_y
     while y < end_y:
@@ -166,7 +173,16 @@ def add_new_vehicles(active_lane):
             x = lane_info["x"] - Vehicle_Size // 2 if lane_info["direction"] in ["down", "up"] else lane_info["x_start"]
             y = lane_info["y_start"] if lane_info["direction"] in ["down", "up"] else lane_info["y"] - Vehicle_Size // 2
 
-            moving_vehicles[lane].append({"id": vehicle["id"], "intent": vehicle["intent"], "x": x, "y": y, "turned": False, "direction": LANE_SCREEN_POSITION[lane]["direction"], "passed_stop": False})
+            if moving_vehicles[lane]:
+                last = moving_vehicles[lane][-1]
+                d = lane_info["direction"]
+
+                if d in ["down", "up"] and abs(last["y"] - y) < Vehicle_Size + Vehicle_Spacing:
+                    continue
+                if d in ["left", "right"] and abs(last["x"] - x) < Vehicle_Size + Vehicle_Spacing:
+                    continue
+
+            moving_vehicles[lane].append({"id": vehicle["id"], "intent": vehicle["intent"], "x": x, "y": y, "turned": False, "direction": LANE_SCREEN_POSITION[lane]["direction"], "passed_stop": False, "shifted": False})
             last_release_time[lane] = current_time
 
 def move_vehicles(dt):
@@ -208,16 +224,6 @@ def move_vehicles(dt):
                     v["direction"] = "up"
                 v["turned"] = True
 
-            d = v["direction"]
-            if d == "down":
-                v["y"] += Vehicle_Speed * dt
-            elif d == "up":
-                v["y"] -= Vehicle_Speed * dt
-            elif d == "right":
-                v["x"] += Vehicle_Speed * dt
-            elif d == "left":
-                v["x"] -= Vehicle_Speed * dt
-
             if i > 0:
                 v_ahead = vehicles[i-1]
 
@@ -238,9 +244,37 @@ def move_vehicles(dt):
                                 if d == "right"
                                 else v_ahead["x"] + (Vehicle_Size + Vehicle_Spacing)
                             )
+            if (lane in MIDDLE_LANE_SHIFT and not v["shifted"] and in_center(v)):
+                if v["direction"] in ["down", "up"]:
+                    v["x"] += MIDDLE_LANE_SHIFT[lane]
+                else:
+                    v["y"] += MIDDLE_LANE_SHIFT[lane]
 
+                v["shifted"] = True
+
+            d = v["direction"]
+            if d == "down":
+                v["y"] += Vehicle_Speed * dt
+            elif d == "up":
+                v["y"] -= Vehicle_Speed * dt
+            elif d == "right":
+                v["x"] += Vehicle_Speed * dt
+            elif d == "left":
+                v["x"] -= Vehicle_Speed * dt
+
+            if not v["passed_stop"]:
+                d = v["direction"]
+                if d == "down" and v["y"] > Stop_line["down"] + 5:
+                    v["passed_stop"] = True
+                elif d == "up" and v["y"] < Stop_line["up"] - 5:
+                    v["passed_stop"] = True
+                elif d == "right" and v["x"] > Stop_line["right"] + 5:
+                    v["passed_stop"] = True
+                elif d == "left" and v["x"] < Stop_line["left"] - 5:
+                    v["passed_stop"] = True
                 
-            if 0 <= v["x"] <= WIDTH and 0 <= v["y"] <= HEIGHT:
+            BUFFER = 50
+            if -BUFFER <= v["x"] <= WIDTH + BUFFER and -BUFFER <= v["y"] <= HEIGHT + BUFFER:
                 new_list.append(v)
 
         moving_vehicles[lane] = new_list
