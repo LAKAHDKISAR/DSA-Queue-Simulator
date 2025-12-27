@@ -144,6 +144,8 @@ OPPOSITE_DIRECTION = {
     "right": "left"
 }
 
+Indicator_req_middle_lanes = ["BL2", "CL2", "DL2"]
+
 def add_log(message):
     global log_messages
     log_messages.append(message)
@@ -234,6 +236,31 @@ def incoming_lane_arrows():
             y = info["y"]
 
         straight_arrow(x, y, OPPOSITE_DIRECTION[d])
+
+def middle_lane_arrows():
+    offset = 45
+
+    for lane in Indicator_req_middle_lanes:
+        info = LANE_SCREEN_POSITION[lane]
+        d = info["direction"]
+
+        if d == "down":
+            x = info["x"]
+            y = Stop_line["down"] - offset
+
+        elif d == "up":
+            x = info["x"]
+            y = Stop_line["up"] + offset
+
+        elif d == "right":
+            x = Stop_line["right"] - offset
+            y = info["y"]
+
+        elif d == "left":
+            x = Stop_line["left"] + offset
+            y = info["y"]
+
+        straight_arrow(x, y, d)
 
 def sidebar():
     sidebar_rect = pygame.Rect(0, 0, SIDEBAR_WIDTH, SIDEBAR_HEIGHT)
@@ -358,6 +385,7 @@ def roads_design():
 
     priority_triangles_al2()
     incoming_lane_arrows()
+    middle_lane_arrows()
 
 def vehicle_design():
     for vehicles in moving_vehicles.values():
