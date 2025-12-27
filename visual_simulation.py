@@ -165,6 +165,32 @@ def dashed_lane_line_horizontal(start_x, end_x, y):
         )
         x += DASH_LEN + GAP_LEN
 
+def draw_priority_triangles_al2():
+    lane_info = LANE_SCREEN_POSITION["AL2"]
+    x = lane_info["x"]
+    junction_y = CENTER_Y - ROAD_WIDTH // 2  
+    offset_back = 20 
+    
+    start_y = junction_y - offset_back 
+    
+    triangle_color = (255, 215, 0) 
+    
+    base = 20
+    height = 30
+    spacing = 40
+    
+    for i in range(3):
+        y = start_y - i * spacing
+        
+        points = [
+            (x, y),                    
+            (x - base // 2, y - height),
+            (x + base // 2, y - height)
+        ]
+        
+        pygame.draw.polygon(screen, triangle_color, points)
+
+
 def roads_design():
     screen.fill(Background_Color)
 
@@ -201,6 +227,7 @@ def roads_design():
     middle_rect = pygame.Rect( CENTER_X - MIDDLE_BOX_SIZE // 2, CENTER_Y - MIDDLE_BOX_SIZE // 2, MIDDLE_BOX_SIZE, MIDDLE_BOX_SIZE)
     pygame.draw.rect(screen, (53,57,53), middle_rect)
 
+    draw_priority_triangles_al2()
 
 def vehicle_design():
     for vehicles in moving_vehicles.values():
