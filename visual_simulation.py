@@ -68,12 +68,12 @@ INCOMING_LANES = ["AL1", "BL1", "CL1", "DL1"]
 
 Light_Radius = 8
 
-Ligth_offset = 75
+Ligtht_offset = 75
 TRAFFIC_LIGHT_POSITION = {
-    "AL2": (CENTER_X, CENTER_Y - ROAD_WIDTH//2 + Ligth_offset), 
-    "BL2": (CENTER_X, CENTER_Y + ROAD_WIDTH//2 - Ligth_offset),
-    "CL2": (CENTER_X + ROAD_WIDTH//2 - Ligth_offset, CENTER_Y),  
-    "DL2": (CENTER_X - ROAD_WIDTH//2 + Ligth_offset, CENTER_Y),  
+    "AL2": (CENTER_X, CENTER_Y - ROAD_WIDTH//2 + Ligtht_offset), 
+    "BL2": (CENTER_X, CENTER_Y + ROAD_WIDTH//2 - Ligtht_offset),
+    "CL2": (CENTER_X + ROAD_WIDTH//2 - Ligtht_offset, CENTER_Y),  
+    "DL2": (CENTER_X - ROAD_WIDTH//2 + Ligtht_offset, CENTER_Y),  
 }
 
 all_lanes = set(LANES_CONTROLLED) | set(LEFT_TURNING_LANES)
@@ -127,6 +127,61 @@ Stop_line = {
     "right": CENTER_X - ROAD_WIDTH // 2 - Vehicle_Height,
 }
 
+SIDEBAR_WIDTH = 350   
+SIDEBAR_HEIGHT = 250  
+SIDEBAR_BG_COLOR = (40, 40, 40)
+LOG_TEXT_COLOR = (220, 220, 220)
+LOG_PADDING = 10
+MAX_LOG_LINES = 10
+
+log_messages = []
+
+def add_log(message):
+    global log_messages
+    log_messages.append(message)
+    if len(log_messages) > MAX_LOG_LINES:
+        log_messages.pop(0)
+
+def wrap_text(text, font, max_width):
+    words = text.split(' ')
+    lines = []
+    current_line = ""
+
+    for word in words:
+        test_line = current_line + word + " "
+        if font.size(test_line)[0] <= max_width:
+            current_line = test_line
+        else:
+            lines.append(current_line.strip())
+            current_line = word + " "
+
+    if current_line:
+        lines.append(current_line.strip())
+
+    return lines
+
+def sidebar():
+    sidebar_rect = pygame.Rect(0, 0, SIDEBAR_WIDTH, SIDEBAR_HEIGHT)
+    pygame.draw.rect(screen, SIDEBAR_BG_COLOR, sidebar_rect)
+
+    title_surface = FONT.render("Traffic Log", True, LOG_TEXT_COLOR)
+    screen.blit(title_surface, (LOG_PADDING, LOG_PADDING))
+
+    y = LOG_PADDING + 30
+    line_height = FONT.get_height() + 4
+    max_text_width = SIDEBAR_WIDTH - 2 * LOG_PADDING
+
+    logs_to_show = log_messages[-MAX_LOG_LINES:]
+
+    for log in logs_to_show:
+        wrapped_lines = wrap_text(log, FONT, max_text_width)
+        for line in wrapped_lines:
+            if y + line_height > SIDEBAR_HEIGHT - LOG_PADDING:
+                return 
+            log_surface = FONT.render(line, True, LOG_TEXT_COLOR)
+            screen.blit(log_surface, (LOG_PADDING, y))
+            y += line_height
+
 
 def lane_names():
     for lane, info in LANE_SCREEN_POSITION.items():
@@ -165,7 +220,7 @@ def dashed_lane_line_horizontal(start_x, end_x, y):
         )
         x += DASH_LEN + GAP_LEN
 
-def draw_priority_triangles_al2():
+def priority_triangles_al2():
     lane_info = LANE_SCREEN_POSITION["AL2"]
     x = lane_info["x"]
     junction_y = CENTER_Y - ROAD_WIDTH // 2  
@@ -227,7 +282,7 @@ def roads_design():
     middle_rect = pygame.Rect( CENTER_X - MIDDLE_BOX_SIZE // 2, CENTER_Y - MIDDLE_BOX_SIZE // 2, MIDDLE_BOX_SIZE, MIDDLE_BOX_SIZE)
     pygame.draw.rect(screen, (53,57,53), middle_rect)
 
-    draw_priority_triangles_al2()
+    priority_triangles_al2()
 
 def vehicle_design():
     for vehicles in moving_vehicles.values():
@@ -272,6 +327,7 @@ def add_new_vehicles(active_lane):
 
             moving_vehicles[lane].append({"id": vehicle["id"], "intent": vehicle["intent"], "x": x, "y": y, "turned": False, "direction": LANE_SCREEN_POSITION[lane]["direction"], "passed_stop": False, "shifted": False, "sprite": random.choice(CAR_IMAGES)})
             last_release_time[lane] = current_time
+            add_log(f"Vehicle {vehicle['id']} released on lane {lane}")
 
 def move_vehicles(dt):
     for lane, vehicles in moving_vehicles.items():
@@ -388,12 +444,16 @@ def move_vehicles(dt):
                 d = v["direction"]
                 if d == "down" and v["y"] > Stop_line["down"] + 5:
                     v["passed_stop"] = True
+                    add_log(f"Vehicle {v['id']} passed stop line on lane {lane}")
                 elif d == "up" and v["y"] < Stop_line["up"] - 5:
                     v["passed_stop"] = True
+                    add_log(f"Vehicle {v['id']} passed stop line on lane {lane}")
                 elif d == "right" and v["x"] > Stop_line["right"] + 5:
                     v["passed_stop"] = True
+                    add_log(f"Vehicle {v['id']} passed stop line on lane {lane}")
                 elif d == "left" and v["x"] < Stop_line["left"] - 5:
                     v["passed_stop"] = True
+                    add_log(f"Vehicle {v['id']} passed stop line on lane {lane}")
                 
             BUFFER = 50
             if -BUFFER <= v["x"] <= WIDTH + BUFFER and -BUFFER <= v["y"] <= HEIGHT + BUFFER:
@@ -455,6 +515,7 @@ def main():
         dt = clock.tick(60) / 1000
         move_vehicles(dt)
         roads_design()
+        sidebar()
         lane_names()
         vehicle_design()
         traffic_lights_design()
