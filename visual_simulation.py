@@ -1,6 +1,7 @@
 import pygame
 import sys
 import random
+import math
 
 from traffic_management import LANES_CONTROLLED, LEFT_TURNING_LANES, lane_queues, INCOMING_LANES, priority_lane_active, priority_should_end, select_lane, update_lights, traffic_lights, green_light_duration, vehicles_to_move, release_vehicles
 
@@ -136,6 +137,13 @@ MAX_LOG_LINES = 10
 
 log_messages = []
 
+OPPOSITE_DIRECTION = {
+    "up": "down",
+    "down": "up",
+    "left": "right",
+    "right": "left"
+}
+
 def add_log(message):
     global log_messages
     log_messages.append(message)
@@ -160,6 +168,73 @@ def wrap_text(text, font, max_width):
 
     return lines
 
+def straight_arrow(x, y, direction, color=(245,245,245)):
+    shaft = 28
+    head = 10
+    w = 4
+
+    if direction == "down":
+        pygame.draw.line(screen, color, (x, y - shaft), (x, y + shaft), w)
+        pygame.draw.polygon(
+            screen, color,
+            [(x, y + shaft + head),
+             (x - head, y + shaft),
+             (x + head, y + shaft)]
+        )
+
+    elif direction == "up":
+        pygame.draw.line(screen, color, (x, y + shaft), (x, y - shaft), w)
+        pygame.draw.polygon(
+            screen, color,
+            [(x, y - shaft - head),
+             (x - head, y - shaft),
+             (x + head, y - shaft)]
+        )
+
+    elif direction == "right":
+        pygame.draw.line(screen, color, (x - shaft, y), (x + shaft, y), w)
+        pygame.draw.polygon(
+            screen, color,
+            [(x + shaft + head, y),
+             (x + shaft, y - head),
+             (x + shaft, y + head)]
+        )
+
+    elif direction == "left":
+        pygame.draw.line(screen, color, (x + shaft, y), (x - shaft, y), w)
+        pygame.draw.polygon(
+            screen, color,
+            [(x - shaft - head, y),
+             (x - shaft, y - head),
+             (x - shaft, y + head)]
+        )
+
+
+def incoming_lane_arrows():
+    offset = 45 
+
+    for lane in INCOMING_LANES:
+        info = LANE_SCREEN_POSITION[lane]
+        d = info["direction"]
+
+        if d == "down":
+            x = info["x"]
+            y = Stop_line["down"] - offset
+
+        elif d == "up":
+            x = info["x"]
+            y = Stop_line["up"] + offset
+
+        elif d == "right":
+            x = Stop_line["right"] - offset
+            y = info["y"]
+
+        elif d == "left":
+            x = Stop_line["left"] + offset
+            y = info["y"]
+
+        straight_arrow(x, y, OPPOSITE_DIRECTION[d])
+
 def sidebar():
     sidebar_rect = pygame.Rect(0, 0, SIDEBAR_WIDTH, SIDEBAR_HEIGHT)
     pygame.draw.rect(screen, SIDEBAR_BG_COLOR, sidebar_rect)
@@ -181,7 +256,6 @@ def sidebar():
             log_surface = FONT.render(line, True, LOG_TEXT_COLOR)
             screen.blit(log_surface, (LOG_PADDING, y))
             y += line_height
-
 
 def lane_names():
     for lane, info in LANE_SCREEN_POSITION.items():
@@ -283,6 +357,7 @@ def roads_design():
     pygame.draw.rect(screen, (53,57,53), middle_rect)
 
     priority_triangles_al2()
+    incoming_lane_arrows()
 
 def vehicle_design():
     for vehicles in moving_vehicles.values():
