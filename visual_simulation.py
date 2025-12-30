@@ -196,6 +196,14 @@ Middle_Circle_Color = grey =(128, 128, 128)
 Road_border_color = (54,79,69)  
 Road_border_width = 2
 
+Crosswalk_stip_width= 4 
+Crosswalk_stip_gap = 4
+Crosswalk_thickness = 15
+Crosswalk_color = (255, 255, 255)
+Crosswalk_offset = 2
+
+Lane_mark_offset= Crosswalk_thickness + Crosswalk_offset + 5
+
 def add_log(message):
     global log_messages
     log_messages.append(message)
@@ -262,8 +270,7 @@ def straight_arrow(x, y, direction, color=(245,245,245)):
         )
 
 def middle_lane_combined_arrow(x, y, direction, color=(245,245,245)):
-    """Draws a longer main arrow with a small right-turn indicator along its shaft pointing correctly."""
-    main_length = ARROW_BODY * 2  # double the length
+    main_length = ARROW_BODY * 2
     small_arrow_length = ARROW_BODY // 2
     w = ARROW_WIDTH
     head = ARROW_HEAD
@@ -518,7 +525,7 @@ def priority_triangles_al2():
     lane_info = LANE_SCREEN_POSITION["AL2"]
     x = lane_info["x"]
     junction_y = CENTER_Y - ROAD_WIDTH // 2  
-    offset_back = 20 
+    offset_back = 25 
     
     start_y = junction_y - offset_back 
     
@@ -555,11 +562,18 @@ def generate_tree_instances():
             TREE_INSTANCES.append((x, CENTER_Y + ROAD_WIDTH//2 + 10, random.choice(TREE_IMAGES)))
 
 generate_tree_instances()
+
 def trees():
     for x, y, tree in TREE_INSTANCES:
         screen.blit(tree, (x, y))
 
-
+def crosswalk(x, y, length, horizontal=True, offset=0):
+    if horizontal:
+        for i in range(0, length, Crosswalk_stip_width + Crosswalk_stip_gap):
+            pygame.draw.rect(screen, Crosswalk_color, (x + i, y + offset, Crosswalk_stip_width, Crosswalk_thickness))
+    else:
+        for i in range(0, length, Crosswalk_stip_width + Crosswalk_stip_gap):
+            pygame.draw.rect(screen, Crosswalk_color, (x + offset, y + i, Crosswalk_thickness, Crosswalk_stip_width))
 def roads_design():
     for x in range(0, WIDTH, Grass_Image.get_width()):
             for y in range(0, HEIGHT, Grass_Image.get_height()):
@@ -570,33 +584,44 @@ def roads_design():
     # -------- A --------
     road_a_rect = pygame.Rect(CENTER_X - ROAD_WIDTH // 2, 0, ROAD_WIDTH, CENTER_Y - ROAD_WIDTH // 2)
     pygame.draw.rect(screen, Road_Color, road_a_rect)
-    pygame.draw.line(screen, Lane_Color, (road_a_rect.left + LANE_WIDTH, road_a_rect.top), (road_a_rect.left + LANE_WIDTH, road_a_rect.bottom), 2) 
-    dashed_lane_line_vertical(road_a_rect.left + 2 * LANE_WIDTH, road_a_rect.top, road_a_rect.bottom)  
+    lane_end = road_a_rect.bottom - Lane_mark_offset
+    pygame.draw.line(screen, Lane_Color, (road_a_rect.left + LANE_WIDTH, road_a_rect.top), (road_a_rect.left + LANE_WIDTH, lane_end), 2) 
+    dashed_lane_line_vertical(road_a_rect.left + 2 * LANE_WIDTH, road_a_rect.top, lane_end)  
     pygame.draw.line(screen, Road_border_color, (road_a_rect.left, road_a_rect.top), (road_a_rect.left, road_a_rect.bottom), Road_border_width)
     pygame.draw.line(screen, Road_border_color, (road_a_rect.right - 1, road_a_rect.top), (road_a_rect.right - 1, road_a_rect.bottom), Road_border_width)
 
     # ------ B --------
     road_b_rect = pygame.Rect(CENTER_X - ROAD_WIDTH // 2, CENTER_Y + ROAD_WIDTH // 2, ROAD_WIDTH, HEIGHT - (CENTER_Y + ROAD_WIDTH // 2))
     pygame.draw.rect(screen, Road_Color, road_b_rect)
-    pygame.draw.line(screen, Lane_Color, (road_b_rect.left + 2 * LANE_WIDTH, road_b_rect.top), (road_b_rect.left + 2 * LANE_WIDTH, road_b_rect.bottom), 2)
-    dashed_lane_line_vertical(road_b_rect.left + LANE_WIDTH, road_b_rect.top, road_b_rect.bottom)
+    lane_end = road_b_rect.top + Lane_mark_offset
+    pygame.draw.line(screen, Lane_Color, (road_b_rect.left + 2 * LANE_WIDTH, lane_end), (road_b_rect.left + 2 * LANE_WIDTH, road_b_rect.bottom), 2)
+    dashed_lane_line_vertical(road_b_rect.left + LANE_WIDTH, lane_end, road_b_rect.bottom)
     pygame.draw.line(screen, Road_border_color, (road_b_rect.left, road_b_rect.top), (road_b_rect.left, road_b_rect.bottom), Road_border_width)
     pygame.draw.line(screen, Road_border_color, (road_b_rect.right - 1, road_b_rect.top), (road_b_rect.right - 1, road_b_rect.bottom), Road_border_width)
     # -------- C --------
     road_c_rect = pygame.Rect(CENTER_X + ROAD_WIDTH // 2, CENTER_Y - ROAD_WIDTH // 2, WIDTH - (CENTER_X + ROAD_WIDTH // 2), ROAD_WIDTH)
     pygame.draw.rect(screen, Road_Color, road_c_rect)
-    dashed_lane_line_horizontal(road_c_rect.left, road_c_rect.right, road_c_rect.top + 2 * LANE_WIDTH)
-    pygame.draw.line(screen, Lane_Color,(road_c_rect.left, road_c_rect.top + LANE_WIDTH), (road_c_rect.right, road_c_rect.top + LANE_WIDTH), 2)
+    lane_end = road_c_rect.left + Lane_mark_offset
+    dashed_lane_line_horizontal(lane_end, road_c_rect.right, road_c_rect.top + 2 * LANE_WIDTH)
+    pygame.draw.line(screen, Lane_Color,(lane_end, road_c_rect.top + LANE_WIDTH), (road_c_rect.right, road_c_rect.top + LANE_WIDTH), 2)
     pygame.draw.line(screen, Road_border_color, (road_c_rect.left, road_c_rect.top), (road_c_rect.right, road_c_rect.top), Road_border_width)
     pygame.draw.line(screen, Road_border_color, (road_c_rect.left, road_c_rect.bottom - 1), (road_c_rect.right, road_c_rect.bottom - 1), Road_border_width)
 
     # -------- D --------
     road_d_rect = pygame.Rect(0, CENTER_Y - ROAD_WIDTH // 2, CENTER_X - ROAD_WIDTH // 2, ROAD_WIDTH)
     pygame.draw.rect(screen, Road_Color, road_d_rect)
-    dashed_lane_line_horizontal(road_d_rect.left, road_d_rect.right, road_d_rect.top + LANE_WIDTH)
-    pygame.draw.line(screen, Lane_Color, (road_d_rect.left, road_d_rect.top + 2 * LANE_WIDTH), (road_d_rect.right, road_d_rect.top + 2 * LANE_WIDTH), 2)
+    lane_end = road_d_rect.right - Lane_mark_offset
+    dashed_lane_line_horizontal(road_d_rect.left, lane_end, road_d_rect.top + LANE_WIDTH)
+    pygame.draw.line(screen, Lane_Color, (road_d_rect.left, road_d_rect.top + 2 * LANE_WIDTH), (lane_end, road_d_rect.top + 2 * LANE_WIDTH), 2)
     pygame.draw.line(screen, Road_border_color, (road_d_rect.left, road_d_rect.top), (road_d_rect.right, road_d_rect.top), Road_border_width)
     pygame.draw.line(screen, Road_border_color, (road_d_rect.left, road_d_rect.bottom - 1), (road_d_rect.right, road_d_rect.bottom - 1), Road_border_width)
+
+    crosswalk(road_a_rect.left, road_a_rect.bottom - Crosswalk_thickness - Crosswalk_offset, road_a_rect.width, horizontal=True)
+    crosswalk(road_b_rect.left, road_b_rect.top + Crosswalk_offset, road_b_rect.width, horizontal=True)
+    crosswalk(road_c_rect.left + Crosswalk_offset, road_c_rect.top, road_c_rect.height, horizontal=False)
+    crosswalk(road_d_rect.right - Crosswalk_thickness - Crosswalk_offset, road_d_rect.top, road_d_rect.height, horizontal=False)
+
+
 
     # - Centre box -
     pygame.draw.rect(screen, Intersection_Color, intersection_rect)
