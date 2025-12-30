@@ -18,6 +18,7 @@ clock = pygame.time.Clock()
 current_light = None  
 light_start_time = pygame.time.get_ticks() / 1000 
 YELLOW_DURATION = 2.0
+ALL_RED_DURATION = 1.0
 
 Background_Color = Army_green = (69, 75, 27)
 Road_Color = Dark_grey =(169, 169, 169)
@@ -815,6 +816,15 @@ def main():
     current_time = pygame.time.get_ticks() / 1000
     phase_end_time = current_time
 
+    current_active_lane = select_lane(priority_lane_active())
+    if current_active_lane:
+        update_lights(current_active_lane)
+
+        green_duration = green_light_duration(current_active_lane, moving_vehicles, Release_interval)
+        active_lane = current_active_lane
+        phase = "GREEN"
+        phase_end_time = current_time + green_duration
+
     while running:
         current_time = pygame.time.get_ticks() / 1000
         if current_time - last_gen_time > GEN_INTERVAL:
@@ -833,12 +843,19 @@ def main():
                 phase_end_time = current_time + YELLOW_DURATION
 
             elif phase == "YELLOW":
+                for l in traffic_lights:
+                    traffic_lights[l] = "RED"
+                phase = "ALL_RED"
+                phase_end_time = current_time + ALL_RED_DURATION
+
+            elif phase == "ALL_RED":
                 current_active_lane = select_lane(priority_lane_active())
 
                 if current_active_lane:
                     update_lights(current_active_lane)
 
                     green_duration = green_light_duration(current_active_lane, moving_vehicles, Release_interval)
+
                     active_lane = current_active_lane
                     phase = "GREEN"
                     phase_end_time = current_time + green_duration
