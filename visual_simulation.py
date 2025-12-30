@@ -17,6 +17,7 @@ clock = pygame.time.Clock()
 
 current_light = None  
 light_start_time = pygame.time.get_ticks() / 1000 
+YELLOW_DURATION = 2.0
 
 Background_Color = Army_green = (69, 75, 27)
 Road_Color = Dark_grey =(169, 169, 169)
@@ -84,7 +85,7 @@ last_release_time = {lane: current_time for lane in all_lanes}
 Time_per_vehicle = 1.0
 Release_interval = Time_per_vehicle
 
-Turn_offset = 60  #--- for left turning vehicles
+Turn_offset = 80  #--- for left turning vehicles
 
 MIDDLE_LANE_SHIFT = {
     "AL2": +LANE_WIDTH,   
@@ -791,21 +792,28 @@ def ready_to_turn_right(v, lane):
 
 def traffic_lights_design():
     for lane, pos in TRAFFIC_LIGHT_POSITION.items():
-        state = "RED"
-        if lane in traffic_lights:
-            state = traffic_lights[lane]
+        state = traffic_lights.get(lane, "RED")
 
-        color = (0, 255, 0) if state == "GREEN" else (255, 0, 0)
+        if state == "GREEN":
+            color = (0, 255, 0)
+        elif state == "YELLOW":
+            color = (255, 255, 0)
+        else:
+            color = (255, 0, 0)
         pygame.draw.circle(screen, color, pos, Light_Radius)
 
 def main():
     running = True
     last_gen_time = pygame.time.get_ticks() / 1000
     GEN_INTERVAL = 3.0
+    phase = "GREEN"
+    current_active_lane = None
     last_active_lane = None
     active_lane = None
     light_start_time = pygame.time.get_ticks() / 1000
     green_duration = 0
+    current_time = pygame.time.get_ticks() / 1000
+    phase_end_time = current_time
 
     while running:
         current_time = pygame.time.get_ticks() / 1000
@@ -813,12 +821,27 @@ def main():
             Generate_vehicle()
             last_gen_time = current_time
 
-        if current_time - light_start_time >= green_duration:
-            active_lane = select_lane(priority_lane_active())
-            if active_lane:
-                update_lights(active_lane)
-                green_duration = green_light_duration(active_lane, moving_vehicles, Release_interval)
-                light_start_time = current_time
+        if current_time >= phase_end_time:
+            if phase == "GREEN":
+                for l in traffic_lights:
+                    if l == current_active_lane:
+                        traffic_lights[l] = "YELLOW"
+                    else:
+                        traffic_lights[l] = "RED"
+
+                phase = "YELLOW"
+                phase_end_time = current_time + YELLOW_DURATION
+
+            elif phase == "YELLOW":
+                current_active_lane = select_lane(priority_lane_active())
+
+                if current_active_lane:
+                    update_lights(current_active_lane)
+
+                    green_duration = green_light_duration(current_active_lane, moving_vehicles, Release_interval)
+                    active_lane = current_active_lane
+                    phase = "GREEN"
+                    phase_end_time = current_time + green_duration
 
         if active_lane:
             add_new_vehicles(active_lane)
@@ -835,7 +858,7 @@ def main():
         vehicle_design()
         traffic_lights_design()
         pygame.display.flip()
-        
+
     pygame.quit()
     sys.exit()
 
