@@ -100,7 +100,7 @@ Priority Lane Specification
 
 ## Simulation Demo
 
-<video src="Docs/Updated_Simulation_Demo.mov" controls width="600"></video>
+<video src="Docs/Trimmed_Demo.mp4" controls width="600"></video>
 
 ## File Structure
 
