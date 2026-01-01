@@ -124,7 +124,13 @@ Priority Lane Specification
 
 ## Simulation_Demo
 
+### Normal Condition
+
 [![Demo Video](https://img.shields.io/badge/Watch_Demo-Click_Here-red?style=for-the-badge&logo=play)](https://github.com/user-attachments/assets/06cb5f90-962b-404e-9b4c-40b3f54e7b54)
+
+### When Priority Lane reach the threshold of >= 5 vehicles.
+
+[![Demo Video](https://img.shields.io/badge/Watch_Demo-Click_Here-red?style=for-the-badge&logo=play)](https://github.com/user-attachments/assets/4290e228-b775-4db7-8033-98050392899e)
 
 ## Data_Structures_Used
 
